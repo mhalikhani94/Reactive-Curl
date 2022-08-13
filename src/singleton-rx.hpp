@@ -20,8 +20,8 @@ public:
 
 	~SingletonRx() = default;
 
-	void send_request(const std::string& url, std::string method, std::map<std::string, std::string> headers,
-	                  const std::string& body, std::promise<Response>* pr = {});
+	rxcpp::observable<std::string> send_request(const std::string& url, std::string method, std::map<std::string, std::string> headers,
+	                  const std::string& body);
 
 	void set_curl_config(long timeout = 500) const;
 
