@@ -8,7 +8,7 @@ using json = nlohmann::json;
 
 int main()
 {
-    YAML::Node config = YAML::LoadFile("../../../config.yml");
+    YAML::Node node = YAML::Load("[1, 2, 3]");
     json ex1 = json::parse(R"(
     {
         "pi": 3.141,
