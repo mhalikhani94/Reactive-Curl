@@ -1,49 +1,49 @@
 #define CURL_STATICLIB
 
-#include "singleton-rx.hpp"
+#include "rx-request-manager.hpp"
 
-// #include "yaml-cpp/yaml.h"
+#include <yaml-cpp/yaml.h>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 int main()
 {
-    // YAML::Node config = YAML::LoadFile("../config.yml");
+    YAML::Node config = YAML::LoadFile("../../../config.yml");
+    json ex1 = json::parse(R"(
+    {
+        "pi": 3.141,
+        "happy": true
+    }
+    )");
 
     const auto get_url = "www.google.com";
-    const auto pst_url = "https://httpbin.org/post";
+    const auto post_url = "https://httpbin.org/post";
 
-    std::promise<Response> promise_val{};
-    std::vector<std::future<Response>> future_vec;
-    future_vec.emplace_back(promise_val.get_future());
-    SingletonRx::instance().set_curl_config(500);
-    SingletonRx::instance().send_request(get_url, "GET", {}, {}, &promise_val);
-    //*
-    if(future_vec.size() > 0)
-        future_vec.at(0).wait();
-    if(future_vec.at(0).valid())
+    std::cout << "Hello World!" << std::endl;
+
+    RxRequestManager::instance().set_curl_config(500);
+    
+    RxRequestManager::instance().send_request(get_url, "GET", {}, {}).subscribe(
+    [&](const rxcpp::observable<std::string>& s)
     {
-        const auto res = future_vec.at(0).get();
-        std::cout << "Http Status: " << res.http_status << std::endl;
-        std::cout << "Http Body: " << res.http_response << std::endl;
-        promise_val = std::promise<Response>{};
-        future_vec.emplace_back(promise_val.get_future());
-        if(res.http_status == 200)
+        s.subscribe(
+        [&](const std::string& response_string)
         {
-            SingletonRx::instance().send_request(pst_url, "POST", {}, {}, &promise_val);
-            future_vec.at(1).wait();
-            if(future_vec.at(1).valid())
-            {
-                const auto res = future_vec.at(1).get();
-                std::cout << "Http Status: " << res.http_status << std::endl;
-                std::cout << "Http Body: " << res.http_response << std::endl;
-                return 0;
-            }
-        }
-        else
+            std::cout << response_string << std::endl;
+        });
+    });
+
+    RxRequestManager::instance().send_request(post_url, "POST", {}, {}).subscribe(
+    [&](const rxcpp::observable<std::string>& s)
+    {
+        s.subscribe(
+        [&](const std::string& response_string)
         {
-            std::cerr << "Bad Http Status. Https status: " << res.http_status << std::endl;
-        }
-    }
-    // */
+            std::cout << response_string << std::endl;
+            std::cout << "Goodbye World!" << std::endl;
+            exit(0);
+        });
+    });
 
     while (true)
     {
