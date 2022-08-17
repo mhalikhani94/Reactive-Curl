@@ -43,9 +43,9 @@ using scan_invalid_t = typename scan_invalid<AN...>::type;
 template<class T, class Observable, class Accumulator, class Seed>
 struct scan : public operator_base<rxu::decay_t<Seed>>
 {
-    using source_type = rxu::decay_t<Observable>;
-    using accumulator_type = rxu::decay_t<Accumulator>;
-    using seed_type = rxu::decay_t<Seed>;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<Accumulator> accumulator_type;
+    typedef rxu::decay_t<Seed> seed_type;
 
     struct scan_initial_type
     {
@@ -85,8 +85,8 @@ struct scan : public operator_base<rxu::decay_t<Seed>>
         state->source.subscribe(
             state->out,
         // on_next
-            [state](auto&& t) {
-                state->result = state->accumulator(std::move(state->result), std::forward<decltype(t)>(t));
+            [state](T t) {
+                state->result = state->accumulator(state->result, t);
                 state->out.on_next(state->result);
             },
         // on_error

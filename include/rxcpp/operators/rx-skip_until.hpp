@@ -48,10 +48,10 @@ using skip_until_invalid_t = typename skip_until_invalid<AN...>::type;
 template<class T, class Observable, class TriggerObservable, class Coordination>
 struct skip_until : public operator_base<T>
 {
-    using source_type = rxu::decay_t<Observable>;
-    using trigger_source_type = rxu::decay_t<TriggerObservable>;
-    using coordination_type = rxu::decay_t<Coordination>;
-    using coordinator_type = typename coordination_type::coordinator_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<TriggerObservable> trigger_source_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
     struct values
     {
         values(source_type s, trigger_source_type t, coordination_type sf)
@@ -85,7 +85,7 @@ struct skip_until : public operator_base<T>
     template<class Subscriber>
     void on_subscribe(Subscriber s) const {
 
-        using output_type = Subscriber;
+        typedef Subscriber output_type;
         struct state_type
             : public std::enable_shared_from_this<state_type>
             , public values
@@ -167,11 +167,11 @@ struct skip_until : public operator_base<T>
         // split subscription lifetime
             state->source_lifetime,
         // on_next
-            [state](auto&& t) {
+            [state](T t) {
                 if (state->mode_value != mode::triggered) {
                     return;
                 }
-                state->out.on_next(std::forward<decltype(t)>(t));
+                state->out.on_next(t);
             },
         // on_error
             [state](rxu::error_ptr e) {

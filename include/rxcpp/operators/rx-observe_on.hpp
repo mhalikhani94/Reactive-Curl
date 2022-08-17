@@ -44,10 +44,10 @@ using observe_on_invalid_t = typename observe_on_invalid<AN...>::type;
 template<class T, class Coordination>
 struct observe_on
 {
-    using source_value_type = rxu::decay_t<T>;
+    typedef rxu::decay_t<T> source_value_type;
 
-    using coordination_type = rxu::decay_t<Coordination>;
-    using coordinator_type = typename coordination_type::coordinator_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     coordination_type coordination;
 
@@ -59,14 +59,14 @@ struct observe_on
     template<class Subscriber>
     struct observe_on_observer
     {
-        using this_type = observe_on_observer<Subscriber>;
-        using value_type = source_value_type;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef observe_on_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
 
-        using notification_type = rxn::notification<T>;
-        using base_notification_type = typename notification_type::type;
-        using queue_type = std::deque<base_notification_type>;
+        typedef rxn::notification<T> notification_type;
+        typedef typename notification_type::type base_notification_type;
+        typedef std::deque<base_notification_type> queue_type;
 
         struct mode
         {
@@ -146,7 +146,7 @@ struct observe_on
                                 }
                                 auto notification = std::move(drain_queue.front());
                                 drain_queue.pop_front();
-                                std::move(*notification).accept(destination);
+                                notification->accept(destination);
                                 std::unique_lock<std::mutex> guard(lock);
                                 self();
                                 if (lifetime.is_subscribed()) break;
@@ -183,11 +183,10 @@ struct observe_on
         {
         }
 
-        template<typename U>
-        void on_next(U&& v) const {
+        void on_next(source_value_type v) const {
             std::unique_lock<std::mutex> guard(state->lock);
             if (state->current == mode::Errored || state->current == mode::Disposed) { return; }
-            state->fill_queue.push_back(notification_type::on_next(std::forward<U>(v)));
+            state->fill_queue.push_back(notification_type::on_next(std::move(v)));
             state->ensure_processing(guard);
         }
         void on_error(rxu::error_ptr e) const {
@@ -305,7 +304,7 @@ public:
 
     explicit observe_on_one_worker(rxsc::scheduler sc) : factory(sc) {}
 
-    using coordinator_type = coordinator<input_type>;
+    typedef coordinator<input_type> coordinator_type;
 
     inline rxsc::scheduler::clock_type::time_point now() const {
         return factory.now();

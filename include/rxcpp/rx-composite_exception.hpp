@@ -11,7 +11,7 @@ namespace rxcpp {
 
 struct composite_exception : std::exception {
 
-    using exception_values = std::vector<rxu::error_ptr>;
+    typedef std::vector<rxu::error_ptr> exception_values;
 
     virtual const char *what() const RXCPP_NOEXCEPT override {
         return "rxcpp composite exception";

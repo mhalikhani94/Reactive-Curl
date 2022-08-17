@@ -14,18 +14,19 @@ namespace schedulers {
 struct event_loop : public scheduler_interface
 {
 private:
-    using this_type = event_loop;
+    typedef event_loop this_type;
     event_loop(const this_type&);
 
     struct loop_worker : public worker_interface
     {
     private:
-        using this_type = loop_worker;
+        typedef loop_worker this_type;
         loop_worker(const this_type&);
 
-        using queue_item_time = detail::schedulable_queue<typename clock_type::time_point>;
+        typedef detail::schedulable_queue<
+            typename clock_type::time_point> queue_item_time;
 
-        using item_type = queue_item_time::item_type;
+        typedef queue_item_time::item_type item_type;
 
         composite_subscription lifetime;
         worker controller;

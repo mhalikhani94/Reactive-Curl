@@ -41,11 +41,11 @@ using take_last_invalid_t = typename take_last_invalid<AN...>::type;
 template<class T, class Observable, class Count>
 struct take_last : public operator_base<T>
 {
-    using source_type = rxu::decay_t<Observable>;
-    using count_type = rxu::decay_t<Count>;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<Count> count_type;
 
-    using queue_type = std::queue<T>;
-    using queue_size_type = typename queue_type::size_type;
+    typedef std::queue<T> queue_type;
+    typedef typename queue_type::size_type queue_size_type;
 
     struct values
     {
@@ -67,7 +67,7 @@ struct take_last : public operator_base<T>
     template<class Subscriber>
     void on_subscribe(const Subscriber& s) const {
 
-        using output_type = Subscriber;
+        typedef Subscriber output_type;
         struct state_type
             : public std::enable_shared_from_this<state_type>
             , public values
@@ -91,12 +91,12 @@ struct take_last : public operator_base<T>
         // split subscription lifetime
             source_lifetime,
         // on_next
-            [state, source_lifetime](auto&& t) {
+            [state, source_lifetime](T t) {
                 if(state->count > 0) {
                     if (state->items.size() == state->count) {
                         state->items.pop();
                     }
-                    state->items.emplace(std::forward<decltype(t)>(t));
+                    state->items.push(t);
                 }
             },
         // on_error

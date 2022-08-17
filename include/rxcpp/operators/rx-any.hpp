@@ -50,9 +50,9 @@ using any_invalid_t = typename any_invalid<AN...>::type;
 template<class T, class Predicate>
 struct any
 {
-    using source_value_type = rxu::decay_t<T>;
-    using value_type = bool;
-    using test_type = rxu::decay_t<Predicate>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef bool value_type;
+    typedef rxu::decay_t<Predicate> test_type;
     test_type test;
 
     any(test_type t)
@@ -63,10 +63,10 @@ struct any
     template<class Subscriber>
     struct any_observer
     {
-        using this_type = any_observer<Subscriber>;
-        using value_type = source_value_type;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef any_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         test_type test;
         mutable bool done;
@@ -77,7 +77,7 @@ struct any
               done(false)
         {
         }
-        void on_next(const source_value_type& v) const {
+        void on_next(source_value_type v) const {
             auto filtered = on_exception([&]() {
                 return !this->test(v); },
                 dest);
@@ -204,13 +204,12 @@ struct member_overload<contains_tag>
         class SourceValue = rxu::value_type_t<Observable>,
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
-        class Predicate = std::function<bool(const rxu::decay_t<T>&)>,
+        class Predicate = std::function<bool(T)>,
         class Any = rxo::detail::any<SourceValue, rxu::decay_t<Predicate>>,
         class Value = rxu::value_type_t<Any>>
     static auto member(Observable&& o, T&& value)
     -> decltype(o.template lift<Value>(Any(nullptr))) {
-        auto valueAsShared = std::make_shared<rxu::decay_t<T>>(std::forward<T>(value));
-        return  o.template lift<Value>(Any([valueAsShared](const rxu::decay_t<T>& n) { return n == *valueAsShared; }));
+        return  o.template lift<Value>(Any([value](T n) { return n == value; }));
     }
 
     template<class... AN>

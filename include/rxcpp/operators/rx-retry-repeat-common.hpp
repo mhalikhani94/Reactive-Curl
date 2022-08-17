@@ -18,7 +18,7 @@ namespace rxcpp {
         struct state_type : public std::enable_shared_from_this<state_type<Values, Subscriber, EventHandlers, T>>,
                             public Values {
 
-            using output_type = Subscriber;
+          typedef Subscriber output_type;
           state_type(const Values& i, const output_type& oarg)
             : Values(i),
               source_lifetime(composite_subscription::empty()),
@@ -38,8 +38,8 @@ namespace rxcpp {
                                     state->out,
                                     state->source_lifetime,
                                     // on_next
-                                    [state](auto&& t) {
-                                      state->out.on_next(std::forward<decltype(t)>(t));
+                                    [state](T t) {
+                                      state->out.on_next(t);
                                     },
                                     // on_error
                                     [state](rxu::error_ptr e) {
@@ -60,8 +60,8 @@ namespace rxcpp {
         // Finite case (explicitely limited with the number of times)
         template <class EventHandlers, class T, class Observable, class Count>
         struct finite : public operator_base<T> {
-            using source_type = rxu::decay_t<Observable>;
-            using count_type = rxu::decay_t<Count>;
+          typedef rxu::decay_t<Observable> source_type;
+          typedef rxu::decay_t<Count> count_type;
 
           struct values {
             values(source_type s, count_type t)
@@ -92,7 +92,7 @@ namespace rxcpp {
 
           template<class Subscriber>
           void on_subscribe(const Subscriber& s) const {
-              using state_t = state_type<values, Subscriber, EventHandlers, T>;
+            typedef state_type<values, Subscriber, EventHandlers, T> state_t;
             // take a copy of the values for each subscription
             auto state = std::make_shared<state_t>(initial_, s);      
             if (initial_.completed_predicate()) {
@@ -111,7 +111,7 @@ namespace rxcpp {
         // Infinite case
         template <class EventHandlers, class T, class Observable>
         struct infinite : public operator_base<T> {
-            using source_type = rxu::decay_t<Observable>;
+          typedef rxu::decay_t<Observable> source_type;
     
           struct values {
             values(source_type s)
@@ -135,7 +135,7 @@ namespace rxcpp {
 
           template<class Subscriber>
           void on_subscribe(const Subscriber& s) const {
-              using state_t = state_type<values, Subscriber, EventHandlers, T>;
+            typedef state_type<values, Subscriber, EventHandlers, T> state_t;
             // take a copy of the values for each subscription
             auto state = std::make_shared<state_t>(initial_, s);
             // start the first iteration

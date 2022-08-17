@@ -17,11 +17,11 @@ class test_type : public scheduler_interface
 {
 public:
 
-    using clock_type = scheduler_interface::clock_type;
+    typedef scheduler_interface::clock_type clock_type;
 
     struct test_type_state : public virtual_time<long, long>
     {
-        using base = virtual_time<long, long>;
+        typedef virtual_time<long, long> base;
 
         using base::schedule_absolute;
         using base::schedule_relative;
@@ -62,8 +62,8 @@ public:
     {
         mutable std::shared_ptr<test_type_state> state;
 
-        using absolute = test_type_state::absolute;
-        using relative = test_type_state::relative;
+        typedef test_type_state::absolute absolute;
+        typedef test_type_state::relative relative;
 
         test_type_worker(std::shared_ptr<test_type_state> st)
             : state(std::move(st))
@@ -160,8 +160,8 @@ template<class T>
 class mock_observer
     : public rxt::detail::test_subject_base<T>
 {
-    using notification_type = typename rxn::notification<T>;
-    using recorded_type = rxn::recorded<typename notification_type::type>;
+    typedef typename rxn::notification<T> notification_type;
+    typedef rxn::recorded<typename notification_type::type> recorded_type;
 
 public:
     explicit mock_observer(std::shared_ptr<test_type::test_type_state> sc)
@@ -187,8 +187,8 @@ public:
 template<class T>
 subscriber<T, rxt::testable_observer<T>> test_type::test_type_worker::make_subscriber() const
 {
-    using  notification_type = typename rxn::notification<T>;
-    using  recorded_type = rxn::recorded<typename notification_type::type>;
+    typedef typename rxn::notification<T> notification_type;
+    typedef rxn::recorded<typename notification_type::type> recorded_type;
 
     auto ts = std::make_shared<mock_observer<T>>(state);
 
@@ -197,7 +197,7 @@ subscriber<T, rxt::testable_observer<T>> test_type::test_type_worker::make_subsc
           [ts](T value)
           {
               ts->m.push_back(
-                              recorded_type(ts->sc->clock(), notification_type::on_next(std::move(value))));
+                              recorded_type(ts->sc->clock(), notification_type::on_next(value)));
           },
           // on_error
           [ts](rxu::error_ptr e)
@@ -217,9 +217,9 @@ template<class T>
 class cold_observable
     : public rxt::detail::test_subject_base<T>
 {
-    using  this_type = cold_observable<T>;
+    typedef cold_observable<T> this_type;
     std::shared_ptr<test_type::test_type_state> sc;
-    using  recorded_type = rxn::recorded<typename rxn::notification<T>::type>;
+    typedef rxn::recorded<typename rxn::notification<T>::type> recorded_type;
     mutable std::vector<recorded_type> mv;
     mutable std::vector<rxn::subscription> sv;
     mutable worker controller;
@@ -282,10 +282,10 @@ template<class T>
 class hot_observable
     : public rxt::detail::test_subject_base<T>
 {
-    using this_type = hot_observable<T>;
+    typedef hot_observable<T> this_type;
     std::shared_ptr<test_type::test_type_state> sc;
-    using recorded_type = rxn::recorded<typename rxn::notification<T>::type>;
-    using observer_type = subscriber<T>;
+    typedef rxn::recorded<typename rxn::notification<T>::type> recorded_type;
+    typedef subscriber<T> observer_type;
     mutable std::vector<recorded_type> mv;
     mutable std::vector<rxn::subscription> sv;
     mutable std::list<observer_type> observers;
@@ -350,7 +350,7 @@ struct is_create_source_function
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype(std::declval<CF>()());
+    static auto check(int) -> decltype((*(CF*)nullptr)());
     template<class CF>
     static not_void check(...);
 
@@ -370,7 +370,7 @@ public:
     {
     }
 
-    using clock_type = detail::test_type::clock_type;
+    typedef detail::test_type::clock_type clock_type;
 
     static const long created_time = 100;
     static const long subscribed_time = 200;
@@ -379,15 +379,15 @@ public:
     template<class T>
     struct messages
     {
-        using notification_type = typename rxn::notification<T>;
-        using recorded_type = rxn::recorded<typename notification_type::type>;
-        using subscription_type = rxn::subscription;
+        typedef typename rxn::notification<T> notification_type;
+        typedef rxn::recorded<typename notification_type::type> recorded_type;
+        typedef rxn::subscription subscription_type;
 
         messages() {}
 
         template<typename U>
-        static recorded_type next(long ticks, U&& value) {
-            return recorded_type(ticks, notification_type::on_next(std::forward<U>(value)));
+        static recorded_type next(long ticks, U value) {
+            return recorded_type(ticks, notification_type::on_next(std::move(value)));
         }
 
         static recorded_type completed(long ticks) {
@@ -408,7 +408,7 @@ public:
     {
         std::shared_ptr<detail::test_type::test_type_worker> tester;
     public:
-
+        
         ~test_worker() {
         }
 
@@ -469,7 +469,7 @@ public:
             struct state_type
             : public std::enable_shared_from_this<state_type>
             {
-                using source_type = decltype(createSource());
+                typedef decltype(createSource()) source_type;
 
                 std::unique_ptr<source_type> source;
                 subscriber<T, rxt::testable_observer<T>> o;
@@ -514,9 +514,9 @@ public:
         template<class F>
         struct start_traits
         {
-            using source_type = decltype(std::declval<F>()());
-            using value_type = typename source_type::value_type;
-            using subscriber_type = subscriber<value_type, rxt::testable_observer<value_type>>;
+            typedef decltype((*(F*)nullptr)()) source_type;
+            typedef typename source_type::value_type value_type;
+            typedef subscriber<value_type, rxt::testable_observer<value_type>> subscriber_type;
         };
 
         template<class F>

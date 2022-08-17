@@ -43,10 +43,10 @@ using debounce_invalid_t = typename debounce_invalid<AN...>::type;
 template<class T, class Duration, class Coordination>
 struct debounce
 {
-    using source_value_type = rxu::decay_t<T>;
-    using coordination_type = rxu::decay_t<Coordination>;
-    using coordinator_type = typename coordination_type::coordinator_type;
-    using duration_type = rxu::decay_t<Duration>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
+    typedef rxu::decay_t<Duration> duration_type;
 
     struct debounce_values
     {
@@ -69,10 +69,10 @@ struct debounce
     template<class Subscriber>
     struct debounce_observer
     {
-        using this_type = debounce_observer<Subscriber>;
-        using value_type = rxu::decay_t<T>;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<T, this_type>;
+        typedef debounce_observer<Subscriber> this_type;
+        typedef rxu::decay_t<T> value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<T, this_type> observer_type;
 
         struct debounce_subscriber_values : public debounce_values
         {
@@ -93,8 +93,7 @@ struct debounce
             mutable std::size_t index;
             mutable rxu::maybe<value_type> value;
         };
-
-        using state_type = std::shared_ptr<debounce_subscriber_values>;
+        typedef std::shared_ptr<debounce_subscriber_values> state_type;
         state_type state;
 
         debounce_observer(composite_subscription cs, dest_type d, debounce_values v, coordinator_type c)
@@ -127,7 +126,7 @@ struct debounce
                 if(id != state->index)
                     return;
 
-                state->dest.on_next(std::move(*state->value));
+                state->dest.on_next(*state->value);
                 state->value.reset();
             };
 
@@ -141,15 +140,13 @@ struct debounce
             return std::function<void(const rxsc::schedulable&)>(selectedProduce.get());
         }
 
-        template<typename U>
-        void on_next(U&& v) const {
-            auto vAsShared = std::make_shared<T>(std::forward<U>(v));
+        void on_next(T v) const {
             auto localState = state;
-            auto work = [vAsShared, localState](const rxsc::schedulable&) {
+            auto work = [v, localState](const rxsc::schedulable&) {
                 auto new_id = ++localState->index;
                 auto produce_time = localState->worker.now() + localState->period;
 
-                localState->value.reset(std::move(*vAsShared));
+                localState->value.reset(v);
                 localState->worker.schedule(produce_time, produce_item(new_id, localState));
             };
             auto selectedWork = on_exception(

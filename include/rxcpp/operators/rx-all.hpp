@@ -42,11 +42,11 @@ using all_invalid_t = typename all_invalid<AN...>::type;
 template<class T, class Predicate>
 struct all
 {
-    using source_value_type = rxu::decay_t<T>;
-    using test_type = rxu::decay_t<Predicate>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Predicate> test_type;
     test_type test;
 
-    using value_type = bool;
+    typedef bool value_type;
 
     all(test_type t)
         : test(std::move(t))
@@ -56,10 +56,10 @@ struct all
     template<class Subscriber>
     struct all_observer
     {
-        using this_type = all_observer<Subscriber>;
-        using value_type = source_value_type;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef all_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         test_type test;
         mutable bool done;
@@ -70,7 +70,7 @@ struct all
               done(false)
         {
         }
-        void on_next(const source_value_type& v) const {
+        void on_next(source_value_type v) const {
             auto filtered = on_exception([&]() {
                 return !this->test(v); },
                 dest);
@@ -161,12 +161,12 @@ struct member_overload<is_empty_tag>
         class SourceValue = rxu::value_type_t<Observable>,
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
-        class Predicate = std::function<bool(const SourceValue&)>,
+        class Predicate = std::function<bool(SourceValue)>,
         class IsEmpty = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
         class Value = rxu::value_type_t<IsEmpty>>
     static auto member(Observable&& o)
     -> decltype(o.template lift<Value>(IsEmpty(nullptr))) {
-        return  o.template lift<Value>(IsEmpty([](const SourceValue&) { return false; }));
+        return  o.template lift<Value>(IsEmpty([](SourceValue) { return false; }));
     }
 
     template<class... AN>

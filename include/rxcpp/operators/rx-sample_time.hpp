@@ -43,10 +43,10 @@ using sample_with_time_invalid_t = typename sample_with_time_invalid<AN...>::typ
 template<class T, class Duration, class Coordination>
 struct sample_with_time
 {
-    using source_value_type = rxu::decay_t<T>;
-    using coordination_type = rxu::decay_t<Coordination>;
-    using coordinator_type = typename coordination_type::coordinator_type;
-    using duration_type = rxu::decay_t<Duration>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
+    typedef rxu::decay_t<Duration> duration_type;
 
     struct sample_with_time_value
     {
@@ -68,10 +68,10 @@ struct sample_with_time
     template<class Subscriber>
     struct sample_with_time_observer
     {
-        using this_type = sample_with_time_observer<Subscriber>;
-        using value_type = T;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef sample_with_time_observer<Subscriber> this_type;
+        typedef T value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
 
         struct sample_with_time_subscriber_value : public sample_with_time_value
         {
@@ -117,7 +117,7 @@ struct sample_with_time
 
             auto produce_sample = [localState](const rxsc::schedulable&) {
                 if(!localState->value.empty()) {
-                    localState->dest.on_next(std::move(* localState->value));
+                    localState->dest.on_next(*localState->value);
                     localState->value.reset();
                 }
             };
@@ -135,9 +135,8 @@ struct sample_with_time
                     localState->worker.schedule(selectedProduce.get());
                 });
         }
-
-        template<typename U>
-        void on_next(U&& v) const {
+        
+        void on_next(T v) const {
             auto localState = state;
             auto work = [v, localState](const rxsc::schedulable&) {
                 localState->value.reset(v);

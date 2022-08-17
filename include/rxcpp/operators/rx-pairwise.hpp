@@ -41,16 +41,16 @@ using pairwise_invalid_t = typename pairwise_invalid<AN...>::type;
 template<class T>
 struct pairwise
 {
-    using source_value_type = rxu::decay_t<T>;
-    using value_type = std::tuple<source_value_type, source_value_type>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef std::tuple<source_value_type, source_value_type> value_type;
 
     template<class Subscriber>
     struct pairwise_observer
     {
-        using this_type = pairwise_observer<Subscriber>;
-        using value_type = std::tuple<source_value_type, source_value_type>;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<T, this_type>;
+        typedef pairwise_observer<Subscriber> this_type;
+        typedef std::tuple<source_value_type, source_value_type> value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<T, this_type> observer_type;
         dest_type dest;
         mutable rxu::detail::maybe<source_value_type> remembered;
 
@@ -58,15 +58,14 @@ struct pairwise
             : dest(std::move(d))
         {
         }
-        template<typename U>
-        void on_next(U&& v) const {
+        void on_next(source_value_type v) const {
             if (remembered.empty()) {
-                remembered.reset(std::forward<U>(v));
+                remembered.reset(v);
                 return;
             }
 
-            dest.on_next(std::make_tuple(std::move(remembered.get()), v));
-            remembered.reset(std::forward<U>(v));
+            dest.on_next(std::make_tuple(remembered.get(), v));
+            remembered.reset(v);
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(e);

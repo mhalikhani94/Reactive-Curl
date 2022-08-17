@@ -51,56 +51,56 @@ using concat_map_invalid_t = typename concat_map_invalid<AN...>::type;
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct concat_traits {
-    using source_type = rxu::decay_t<Observable>;
-    using collection_selector_type = rxu::decay_t<CollectionSelector>;
-    using result_selector_type = rxu::decay_t<ResultSelector>;
-    using coordination_type = rxu::decay_t<Coordination>;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<CollectionSelector> collection_selector_type;
+    typedef rxu::decay_t<ResultSelector> result_selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
-    using source_value_type = typename source_type::value_type;
+    typedef typename source_type::value_type source_value_type;
 
     struct tag_not_valid {};
     template<class CV, class CCS>
-    static auto collection_check(int) -> decltype(std::declval<CCS>()(std::declval<CV>()));
+    static auto collection_check(int) -> decltype((*(CCS*)nullptr)(*(CV*)nullptr));
     template<class CV, class CCS>
     static tag_not_valid collection_check(...);
 
-    static_assert(!std::is_same_v<decltype(collection_check<source_value_type, collection_selector_type>(0)), tag_not_valid>, "concat_map CollectionSelector must be a function with the signature observable(concat_map::source_value_type)");
+    static_assert(!std::is_same<decltype(collection_check<source_value_type, collection_selector_type>(0)), tag_not_valid>::value, "concat_map CollectionSelector must be a function with the signature observable(concat_map::source_value_type)");
 
-    using collection_type = decltype(std::declval<collection_selector_type>()((*(source_value_type *) nullptr)));
+    typedef decltype((*(collection_selector_type*)nullptr)((*(source_value_type*)nullptr))) collection_type;
 
 //#if _MSC_VER >= 1900
     static_assert(is_observable<collection_type>::value, "concat_map CollectionSelector must return an observable");
 //#endif
 
-    using collection_value_type = typename collection_type::value_type;
+    typedef typename collection_type::value_type collection_value_type;
 
     template<class CV, class CCV, class CRS>
-    static auto result_check(int) -> decltype((std::declval<CRS>())(std::declval<CV>(), std::declval<CCV>()));
+    static auto result_check(int) -> decltype((*(CRS*)nullptr)(*(CV*)nullptr, *(CCV*)nullptr));
     template<class CV, class CCV, class CRS>
     static tag_not_valid result_check(...);
 
-    static_assert(!std::is_same_v<decltype(result_check<source_value_type, collection_value_type, result_selector_type>(0)), tag_not_valid>, "concat_map ResultSelector must be a function with the signature concat_map::value_type(concat_map::source_value_type, concat_map::collection_value_type)");
+    static_assert(!std::is_same<decltype(result_check<source_value_type, collection_value_type, result_selector_type>(0)), tag_not_valid>::value, "concat_map ResultSelector must be a function with the signature concat_map::value_type(concat_map::source_value_type, concat_map::collection_value_type)");
 
-    using value_type = rxu::decay_t<decltype(std::declval<result_selector_type>()(std::declval<source_value_type>(), std::declval<collection_value_type>()))> ;
+    typedef rxu::decay_t<decltype((*(result_selector_type*)nullptr)(*(source_value_type*)nullptr, *(collection_value_type*)nullptr))> value_type;
 };
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct concat_map
     : public operator_base<rxu::value_type_t<concat_traits<Observable, CollectionSelector, ResultSelector, Coordination>>>
 {
-    using this_type = concat_map<Observable, CollectionSelector, ResultSelector, Coordination>;
-    using traits = concat_traits<Observable, CollectionSelector, ResultSelector, Coordination>;
+    typedef concat_map<Observable, CollectionSelector, ResultSelector, Coordination> this_type;
+    typedef concat_traits<Observable, CollectionSelector, ResultSelector, Coordination> traits;
 
-    using source_type = typename traits::source_type;
-    using collection_selector_type = typename traits::collection_selector_type;
-    using result_selector_type = typename traits::result_selector_type;
+    typedef typename traits::source_type source_type;
+    typedef typename traits::collection_selector_type collection_selector_type;
+    typedef typename traits::result_selector_type result_selector_type;
 
-    using source_value_type = typename traits::source_value_type;
-    using collection_type = typename traits::collection_type;
-    using collection_value_type = typename traits::collection_value_type;
+    typedef typename traits::source_value_type source_value_type;
+    typedef typename traits::collection_type collection_type;
+    typedef typename traits::collection_value_type collection_value_type;
 
-    using coordination_type = typename traits::coordination_type;
-    using coordinator_type = typename coordination_type::coordinator_type;
+    typedef typename traits::coordination_type coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct values
     {
@@ -129,7 +129,7 @@ struct concat_map
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        using output_type = Subscriber;
+        typedef Subscriber output_type;
 
         struct concat_map_state_type
             : public std::enable_shared_from_this<concat_map_state_type>
@@ -144,22 +144,12 @@ struct concat_map
             {
             }
 
-            void subscribe_to(const source_value_type& st)
-            {
-                subscribe_to(std::make_shared<source_value_type>(st));
-            }
-
-            void subscribe_to(source_value_type&& st)
-            {
-                subscribe_to(std::make_shared<source_value_type>(std::move(st)));
-            }
-
-            void subscribe_to(std::shared_ptr<source_value_type>&& st)
+            void subscribe_to(source_value_type st)
             {
                 auto state = this->shared_from_this();
 
                 auto selectedCollection = on_exception(
-                    [&](){return state->selectCollection(*st);},
+                    [&](){return state->selectCollection(st);},
                     state->out);
                 if (selectedCollection.empty()) {
                     return;
@@ -189,7 +179,7 @@ struct concat_map
                     collectionLifetime,
                 // on_next
                     [state, st](collection_value_type ct) {
-                        auto selectedResult = state->selectResult(*st, std::move(ct));
+                        auto selectedResult = state->selectResult(st, std::move(ct));
                         state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
@@ -202,7 +192,7 @@ struct concat_map
                             auto value = state->selectedCollections.front();
                             state->selectedCollections.pop_front();
                             state->collectionLifetime.unsubscribe();
-                            state->subscribe_to(std::move(value));
+                            state->subscribe_to(value);
                         } else if (!state->sourceLifetime.is_subscribed()) {
                             state->out.on_completed();
                         }
@@ -248,11 +238,11 @@ struct concat_map
             state->out,
             state->sourceLifetime,
         // on_next
-            [state](auto&& st) {
+            [state](source_value_type st) {
                 if (state->collectionLifetime.is_subscribed()) {
-                    state->selectedCollections.push_back(std::forward<decltype(st)>(st));
+                    state->selectedCollections.push_back(st);
                 } else if (state->selectedCollections.empty()) {
-                    state->subscribe_to(std::forward<decltype(st)>(st));
+                    state->subscribe_to(st);
                 }
             },
         // on_error
@@ -305,13 +295,13 @@ struct member_overload<concat_map_tag>
     template<class Observable, class CollectionSelector,
         class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class CollectionType = rxu::callable_result_t<CollectionSelectorType, SourceValue>,
+        class CollectionType = rxu::result_of_t<CollectionSelectorType(SourceValue)>,
         class ResultSelectorType = rxu::detail::take_at<1>,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, CollectionType>>,
         class ConcatMap = rxo::detail::concat_map<rxu::decay_t<Observable>, rxu::decay_t<CollectionSelector>, ResultSelectorType, identity_one_worker>,
         class CollectionValueType = rxu::value_type_t<CollectionType>,
-        class Value = rxu::callable_result_t<ResultSelectorType, SourceValue, CollectionValueType>,
+        class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
         class Result = observable<Value, ConcatMap>
     >
     static Result member(Observable&& o, CollectionSelector&& s) {
@@ -321,14 +311,14 @@ struct member_overload<concat_map_tag>
     template<class Observable, class CollectionSelector, class Coordination,
         class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class CollectionType = rxu::callable_result_t<CollectionSelectorType, SourceValue>,
+        class CollectionType = rxu::result_of_t<CollectionSelectorType(SourceValue)>,
         class ResultSelectorType = rxu::detail::take_at<1>,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, CollectionType>,
             is_coordination<Coordination>>,
         class ConcatMap = rxo::detail::concat_map<rxu::decay_t<Observable>, rxu::decay_t<CollectionSelector>, ResultSelectorType, rxu::decay_t<Coordination>>,
         class CollectionValueType = rxu::value_type_t<CollectionType>,
-        class Value = rxu::callable_result_t<ResultSelectorType, SourceValue, CollectionValueType>,
+        class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
         class Result = observable<Value, ConcatMap>
     >
     static Result member(Observable&& o, CollectionSelector&& s, Coordination&& cn) {
@@ -339,14 +329,14 @@ struct member_overload<concat_map_tag>
         class IsCoordination = is_coordination<ResultSelector>,
         class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class CollectionType = rxu::callable_result_t<CollectionSelectorType, SourceValue>,
+        class CollectionType = rxu::result_of_t<CollectionSelectorType(SourceValue)>,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, CollectionType>,
             rxu::negation<IsCoordination>>,
         class ConcatMap = rxo::detail::concat_map<rxu::decay_t<Observable>, rxu::decay_t<CollectionSelector>, rxu::decay_t<ResultSelector>, identity_one_worker>,
         class CollectionValueType = rxu::value_type_t<CollectionType>,
         class ResultSelectorType = rxu::decay_t<ResultSelector>,
-        class Value = rxu::callable_result_t<ResultSelectorType, SourceValue, CollectionValueType>,
+        class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
         class Result = observable<Value, ConcatMap>
     >
     static Result member(Observable&& o, CollectionSelector&& s, ResultSelector&& rs) {
@@ -356,14 +346,14 @@ struct member_overload<concat_map_tag>
     template<class Observable, class CollectionSelector, class ResultSelector, class Coordination,
         class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class CollectionType = rxu::callable_result_t<CollectionSelectorType, SourceValue>,
+        class CollectionType = rxu::result_of_t<CollectionSelectorType(SourceValue)>,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, CollectionType>,
             is_coordination<Coordination>>,
         class ConcatMap = rxo::detail::concat_map<rxu::decay_t<Observable>, rxu::decay_t<CollectionSelector>, rxu::decay_t<ResultSelector>, rxu::decay_t<Coordination>>,
         class CollectionValueType = rxu::value_type_t<CollectionType>,
         class ResultSelectorType = rxu::decay_t<ResultSelector>,
-        class Value = rxu::callable_result_t<ResultSelectorType, SourceValue, CollectionValueType>,
+        class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
         class Result = observable<Value, ConcatMap>
     >
     static Result member(Observable&& o, CollectionSelector&& s, ResultSelector&& rs, Coordination&& cn) {

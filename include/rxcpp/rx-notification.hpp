@@ -46,15 +46,14 @@ template<typename T>
 struct notification_base
     : public std::enable_shared_from_this<notification_base<T>>
 {
-    using observer_type = subscriber<T>;
-    using type = std::shared_ptr<notification_base<T>>;
+    typedef subscriber<T> observer_type;
+    typedef std::shared_ptr<notification_base<T>> type;
 
     virtual ~notification_base() {}
 
     virtual void out(std::ostream& out) const =0;
     virtual bool equals(const type& other) const = 0;
-    virtual void accept(const observer_type& o) const & =0;
-    virtual void accept(const observer_type& o) && =0;
+    virtual void accept(const observer_type& o) const =0;
 };
 
 template<class T>
@@ -116,38 +115,34 @@ bool equals(const T&, const T&, ...) {
 template<typename T>
 struct notification
 {
-    using type = typename detail::notification_base<T>::type;
-    using observer_type = typename detail::notification_base<T>::observer_type;
+    typedef typename detail::notification_base<T>::type type;
+    typedef typename detail::notification_base<T>::observer_type observer_type;
 
 private:
-    using base = detail::notification_base<T>;
+    typedef detail::notification_base<T> base;
 
     struct on_next_notification : public base {
-        on_next_notification(T&& value) : value(std::move(value)) {}
-        on_next_notification(const T& value) : value(value) {}
+        on_next_notification(T value) : value(std::move(value)) {
+        }
         on_next_notification(const on_next_notification& o) : value(o.value) {}
         on_next_notification(const on_next_notification&& o) : value(std::move(o.value)) {}
         on_next_notification& operator=(on_next_notification o) { value = std::move(o.value); return *this; }
-        void out(std::ostream& os) const override {
+        virtual void out(std::ostream& os) const {
             os << "on_next( ";
             detail::to_stream(os, value, 0, 0);
             os << ")";
         }
-        bool equals(const typename base::type& other) const override {
+        virtual bool equals(const typename base::type& other) const {
             bool result = false;
             other->accept(make_subscriber<T>(make_observer_dynamic<T>([this, &result](T v) {
                     result = detail::equals(this->value, v, 0);
                 })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const & override{
+        virtual void accept(const typename base::observer_type& o) const {
             o.on_next(value);
         }
-
-        void accept(const typename base::observer_type& o) && override {
-            o.on_next(std::move(value));
-        }
-        T value;
+        const T value;
     };
 
     struct on_error_notification : public base {
@@ -156,12 +151,12 @@ private:
         on_error_notification(const on_error_notification& o) : ep(o.ep) {}
         on_error_notification(const on_error_notification&& o) : ep(std::move(o.ep)) {}
         on_error_notification& operator=(on_error_notification o) { ep = std::move(o.ep); return *this; }
-        void out(std::ostream& os) const override {
+        virtual void out(std::ostream& os) const {
             os << "on_error(";
             os << rxu::what(ep);
             os << ")";
         }
-        bool equals(const typename base::type& other) const override {
+        virtual bool equals(const typename base::type& other) const {
             bool result = false;
             // not trying to compare exceptions
             other->accept(make_subscriber<T>(make_observer_dynamic<T>([](T){}, [&result](rxu::error_ptr){
@@ -169,11 +164,7 @@ private:
             })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const & override{
-            o.on_error(ep);
-        }
-
-        void accept(const typename base::observer_type& o) && override{
+        virtual void accept(const typename base::observer_type& o) const {
             o.on_error(ep);
         }
         const rxu::error_ptr ep;
@@ -182,21 +173,17 @@ private:
     struct on_completed_notification : public base {
         on_completed_notification() {
         }
-        void out(std::ostream& os) const override {
+        virtual void out(std::ostream& os) const {
             os << "on_completed()";
         }
-        bool equals(const typename base::type& other) const override {
+        virtual bool equals(const typename base::type& other) const {
             bool result = false;
             other->accept(make_subscriber<T>(make_observer_dynamic<T>([](T){}, [&result](){
                 result = true;
             })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const & override{
-            o.on_completed();
-        }
-
-        void accept(const typename base::observer_type& o) && override{
+        virtual void accept(const typename base::observer_type& o) const {
             o.on_completed();
         }
     };
@@ -219,8 +206,8 @@ private:
 
 public:
     template<typename U>
-    static type on_next(U&& value) {
-        return std::make_shared<on_next_notification>(std::forward<U>(value));
+    static type on_next(U value) {
+        return std::make_shared<on_next_notification>(std::move(value));
     }
 
     static type on_completed() {
@@ -229,7 +216,10 @@ public:
 
     template<typename Exception>
     static type on_error(Exception&& e) {
-        return make_on_error(typename std::conditional_t<std::is_same_v<rxu::decay_t<Exception>, rxu::error_ptr>, exception_ptr_tag, exception_tag>(), std::forward<Exception>(e));
+        return make_on_error(typename std::conditional<
+            std::is_same<rxu::decay_t<Exception>, rxu::error_ptr>::value,
+                exception_ptr_tag, exception_tag>::type(),
+            std::forward<Exception>(e));
     }
 };
 

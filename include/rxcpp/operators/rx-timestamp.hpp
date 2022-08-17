@@ -41,8 +41,8 @@ using timestamp_invalid_t = typename timestamp_invalid<AN...>::type;
 template<class T, class Coordination>
 struct timestamp
 {
-    using source_value_type = rxu::decay_t<T>;
-    using coordination_type = rxu::decay_t<Coordination>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     struct timestamp_values {
         timestamp_values(coordination_type c)
@@ -62,10 +62,10 @@ struct timestamp
     template<class Subscriber>
     struct timestamp_observer
     {
-        using this_type = timestamp_observer<Subscriber>;
-        using value_type = source_value_type;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef timestamp_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         coordination_type coord;
 
@@ -75,9 +75,8 @@ struct timestamp
         {
         }
 
-        template<typename U>
-        void on_next(U&& v) const {
-            dest.on_next(std::make_pair(std::forward<U>(v), coord.now()));
+        void on_next(source_value_type v) const {
+            dest.on_next(std::make_pair(v, coord.now()));
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(e);

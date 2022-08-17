@@ -41,8 +41,8 @@ using distinct_until_changed_invalid_t = typename distinct_until_changed_invalid
 template<class T, class BinaryPredicate>
 struct distinct_until_changed
 {
-    using source_value_type = rxu::decay_t<T>;
-    using predicate_type = rxu::decay_t<BinaryPredicate>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<BinaryPredicate> predicate_type;
 
     predicate_type pred;
 
@@ -54,10 +54,10 @@ struct distinct_until_changed
     template<class Subscriber>
     struct distinct_until_changed_observer
     {
-        using this_type = distinct_until_changed_observer<Subscriber>;
-        using value_type = source_value_type;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef distinct_until_changed_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
 
         dest_type dest;
         predicate_type pred;
@@ -68,11 +68,10 @@ struct distinct_until_changed
             , pred(std::move(pred))
         {
         }
-        template<typename U>
-        void on_next(U&& v) const {
+        void on_next(source_value_type v) const {
             if (remembered.empty() || !pred(v, remembered.get())) {
                 remembered.reset(v);
-                dest.on_next(std::forward<U>(v));
+                dest.on_next(v);
             }
         }
         void on_error(rxu::error_ptr e) const {

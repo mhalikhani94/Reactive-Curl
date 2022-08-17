@@ -143,8 +143,8 @@ struct defer_observable;
 struct tag_observable {};
 template<class T>
 struct observable_base {
-    using observable_tag = tag_observable;
-    using value_type = T;
+    typedef tag_observable observable_tag;
+    typedef T value_type;
 };
 
 namespace detail {
@@ -202,7 +202,8 @@ template<class T>
 class dynamic_connectable_observable;
 
 template<class T,
-    class SourceObservable = typename std::conditional_t<std::is_same_v<T, void>, void, dynamic_connectable_observable<T>>>
+    class SourceObservable = typename std::conditional<std::is_same<T, void>::value,
+        void, dynamic_connectable_observable<T>>::type>
 class connectable_observable;
 
 struct tag_connectable_observable : public tag_observable {};
@@ -235,7 +236,8 @@ template<class K, class T>
 class dynamic_grouped_observable;
 
 template<class K, class T,
-    class SourceObservable = typename std::conditional_t<std::is_same_v<T, void>, void, dynamic_grouped_observable<K, T>>>
+    class SourceObservable = typename std::conditional<std::is_same<T, void>::value,
+        void, dynamic_grouped_observable<K, T>>::type>
 class grouped_observable;
 
 template<class K, class T, class Source>
@@ -262,13 +264,13 @@ struct is_operator_factory_for {
 
     struct tag_not_valid;
     template<class CS, class CO>
-    static auto check(int) -> decltype(std::declval<CS>()(std::declval<CO>()));
+    static auto check(int) -> decltype((*(CS*)nullptr)((*(CO*)nullptr)));
     template<class CS, class CO>
     static tag_not_valid check(...);
 
     using type = decltype(check<function_type, source_type>(0));
 
-    static const bool value = !std::is_same_v<type, tag_not_valid> && is_observable<source_type>::value;
+    static const bool value = !std::is_same<type, tag_not_valid>::value && is_observable<source_type>::value;
 };
 
 //
@@ -296,18 +298,18 @@ struct identity_for
 template<class T, class Seed, class Accumulator>
 struct is_accumulate_function_for {
 
-    using accumulator_type = rxu::decay_t<Accumulator>;
-    using seed_type = rxu::decay_t<Seed>;
-    using source_value_type = T;
+    typedef rxu::decay_t<Accumulator> accumulator_type;
+    typedef rxu::decay_t<Seed> seed_type;
+    typedef T source_value_type;
 
     struct tag_not_valid {};
     template<class CS, class CV, class CRS>
-    static auto check(int) -> decltype(std::declval<CRS>()(std::declval<CS>(), std::declval<CV>()));
+    static auto check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr, *(CV*)nullptr));
     template<class CS, class CV, class CRS>
     static tag_not_valid check(...);
 
-    using type = decltype(check<seed_type, source_value_type, accumulator_type>(0));
-    static const bool value = std::is_same_v<type, seed_type>;
+    typedef decltype(check<seed_type, source_value_type, accumulator_type>(0)) type;
+    static const bool value = std::is_same<type, seed_type>::value;
 };
 
 }

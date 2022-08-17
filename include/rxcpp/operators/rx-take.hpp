@@ -41,8 +41,8 @@ using take_invalid_t = typename take_invalid<AN...>::type;
 template<class T, class Observable, class Count>
 struct take : public operator_base<T>
 {
-    using source_type = rxu::decay_t<Observable>;
-    using count_type = rxu::decay_t<Count>;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<Count> count_type;
     struct values
     {
         values(source_type s, count_type t)
@@ -73,7 +73,7 @@ struct take : public operator_base<T>
     template<class Subscriber>
     void on_subscribe(const Subscriber& s) const {
 
-        using output_type = Subscriber;
+        typedef Subscriber output_type;
         struct state_type
             : public std::enable_shared_from_this<state_type>
             , public values
@@ -98,13 +98,13 @@ struct take : public operator_base<T>
         // split subscription lifetime
             source_lifetime,
         // on_next
-            [state, source_lifetime](auto&& t) {
+            [state, source_lifetime](T t) {
                 if (state->mode_value < mode::triggered) {
                     if (--state->count > 0) {
-                        state->out.on_next(std::forward<decltype(t)>(t));
+                        state->out.on_next(t);
                     } else {
                         state->mode_value = mode::triggered;
-                        state->out.on_next(std::forward<decltype(t)>(t));
+                        state->out.on_next(t);
                         // must shutdown source before signaling completion
                         source_lifetime.unsubscribe();
                         state->out.on_completed();

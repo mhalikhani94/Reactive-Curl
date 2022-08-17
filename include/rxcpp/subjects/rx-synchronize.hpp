@@ -16,18 +16,18 @@ namespace detail {
 template<class T, class Coordination>
 class synchronize_observer : public detail::multicast_observer<T>
 {
-    using this_type = synchronize_observer<T, Coordination>;
-    using base_type = detail::multicast_observer<T>;
+    typedef synchronize_observer<T, Coordination> this_type;
+    typedef detail::multicast_observer<T> base_type;
 
-    using coordination_type = rxu::decay_t<Coordination>;
-    using coordinator_type = typename coordination_type::coordinator_type;
-    using output_type = typename coordinator_type::template get<subscriber < T>>::type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
+    typedef typename coordinator_type::template get<subscriber<T>>::type output_type;
 
     struct synchronize_observer_state : public std::enable_shared_from_this<synchronize_observer_state>
     {
-        using notification_type = rxn::notification<T>;
-        using base_notification_type = typename notification_type::type;
-        using queue_type = std::deque<base_notification_type>;
+        typedef rxn::notification<T> notification_type;
+        typedef typename notification_type::type base_notification_type;
+        typedef std::deque<base_notification_type> queue_type;
 
         struct mode
         {
@@ -72,7 +72,7 @@ class synchronize_observer : public detail::multicast_observer<T>
                         auto notification = std::move(fill_queue.front());
                         fill_queue.pop_front();
                         guard.unlock();
-                        std::move(*notification).accept(destination);
+                        notification->accept(destination);
                         self();
                     } RXCPP_CATCH(...) {
                         destination.on_error(rxu::current_exception());
@@ -236,7 +236,7 @@ public:
 
     explicit synchronize_in_one_worker(rxsc::scheduler sc) : factory(sc) {}
 
-    using coordinator_type = coordinator<input_type>;
+    typedef coordinator<input_type> coordinator_type;
 
     inline rxsc::scheduler::clock_type::time_point now() const {
         return factory.now();

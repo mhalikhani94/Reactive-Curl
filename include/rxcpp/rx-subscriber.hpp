@@ -12,7 +12,7 @@ namespace rxcpp {
 template<class T>
 struct subscriber_base : public observer_base<T>, public subscription_base
 {
-    using subscriber_tag = tag_subscriber;
+    typedef tag_subscriber subscriber_tag;
 };
 
 /*!
@@ -26,8 +26,8 @@ class subscriber : public subscriber_base<T>
 {
     static_assert(!is_subscriber<Observer>::value, "not allowed to nest subscribers");
     static_assert(is_observer<Observer>::value, "subscriber must contain an observer<T, ...>");
-    using this_type = subscriber<T, Observer>;
-    using observer_type = rxu::decay_t<Observer>;
+    typedef subscriber<T, Observer> this_type;
+    typedef rxu::decay_t<Observer> observer_type;
 
     composite_subscription lifetime;
     observer_type destination;
@@ -48,10 +48,10 @@ class subscriber : public subscriber_base<T>
         {
         }
         template<class U>
-        void operator()(U&& u) {
+        void operator()(U u) {
             trace_activity().on_next_enter(*that, u);
             RXCPP_TRY {
-                that->destination.on_next(std::forward<U>(u));
+                that->destination.on_next(std::move(u));
                 do_unsubscribe = false;
             } RXCPP_CATCH(...) {
                 auto ex = rxu::current_exception();
@@ -102,7 +102,7 @@ class subscriber : public subscriber_base<T>
 
     subscriber();
 public:
-    using weak_subscription = typename composite_subscription::weak_subscription;
+    typedef typename composite_subscription::weak_subscription weak_subscription;
 
     subscriber(const this_type& o)
         : lifetime(o.lifetime)
@@ -124,8 +124,8 @@ public:
     subscriber(
         const subscriber<T, O>& o,
         typename std::enable_if<
-               !std::is_same_v<O, observer<T>> &&
-               std::is_same_v<Observer, observer<T>>, void**>::type = nullptr)
+               !std::is_same<O, observer<T>>::value &&
+               std::is_same<Observer, observer<T>>::value, void**>::type = nullptr)
         : lifetime(o.lifetime)
         , destination(o.destination.as_dynamic())
         , id(o.id)

@@ -15,12 +15,13 @@ namespace detail {
 
 struct run_loop_state : public std::enable_shared_from_this<run_loop_state>
 {
-    using clock_type = scheduler::clock_type;
+    typedef scheduler::clock_type clock_type;
 
-    using queue_item_time = detail::schedulable_queue<clock_type::time_point>;
+    typedef detail::schedulable_queue<
+        clock_type::time_point> queue_item_time;
 
-    using item_type = queue_item_time::item_type;
-    using const_reference_item_type = queue_item_time::const_reference;
+    typedef queue_item_time::item_type item_type;
+    typedef queue_item_time::const_reference const_reference_item_type;
 
     virtual ~run_loop_state()
     {
@@ -43,13 +44,13 @@ struct run_loop_state : public std::enable_shared_from_this<run_loop_state>
 struct run_loop_scheduler : public scheduler_interface
 {
 private:
-    using this_type = run_loop_scheduler;
+    typedef run_loop_scheduler this_type;
     run_loop_scheduler(const this_type&);
 
     struct run_loop_worker : public worker_interface
     {
     private:
-        using this_type = run_loop_worker;
+        typedef run_loop_worker this_type;
 
         run_loop_worker(const this_type&);
 
@@ -117,22 +118,22 @@ public:
 class run_loop
 {
 private:
-    using this_type = run_loop;
+    typedef run_loop this_type;
     // don't allow this instance to copy/move since it owns current_thread queue
     // for the thread it is constructed on.
     run_loop(const this_type&);
     run_loop(this_type&&);
 
-    using queue_type = detail::action_queue;
+    typedef detail::action_queue queue_type;
 
-    using item_type = detail::run_loop_state::item_type;
-    using const_reference_item_type = detail::run_loop_state::const_reference_item_type;
+    typedef detail::run_loop_state::item_type item_type;
+    typedef detail::run_loop_state::const_reference_item_type const_reference_item_type;
 
     std::shared_ptr<detail::run_loop_state> state;
     std::shared_ptr<run_loop_scheduler> sc;
 
 public:
-    using clock_type = scheduler::clock_type;
+    typedef scheduler::clock_type clock_type;
     run_loop()
         : state(std::make_shared<detail::run_loop_state>())
         , sc(std::make_shared<run_loop_scheduler>(state))

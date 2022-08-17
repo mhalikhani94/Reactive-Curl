@@ -41,8 +41,8 @@ using filter_invalid_t = typename filter_invalid<AN...>::type;
 template<class T, class Predicate>
 struct filter
 {
-    using source_value_type = rxu::decay_t<T>;
-    using test_type = rxu::decay_t<Predicate>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Predicate> test_type;
     test_type test;
 
     filter(test_type t)
@@ -53,10 +53,10 @@ struct filter
     template<class Subscriber>
     struct filter_observer
     {
-        using this_type = filter_observer<Subscriber>;
-        using value_type = source_value_type;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef filter_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         mutable test_type test;
 

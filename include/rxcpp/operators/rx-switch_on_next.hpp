@@ -45,18 +45,18 @@ struct switch_on_next
     //static_assert(is_observable<Observable>::value, "switch_on_next requires an observable");
     //static_assert(is_observable<T>::value, "switch_on_next requires an observable that contains observables");
 
-    using this_type = switch_on_next<T, Observable, Coordination>;
+    typedef switch_on_next<T, Observable, Coordination> this_type;
 
-    using source_value_type = rxu::decay_t<T>;
-    using source_type = rxu::decay_t<Observable>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Observable> source_type;
 
-    using source_operator_type = typename source_type::source_operator_type;
+    typedef typename source_type::source_operator_type source_operator_type;
 
-    using collection_type = source_value_type;
-    using collection_value_type = typename collection_type::value_type;
+    typedef source_value_type collection_type;
+    typedef typename collection_type::value_type collection_value_type;
 
-    using coordination_type = rxu::decay_t<Coordination>;
-    using coordinator_type = typename coordination_type::coordinator_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct values
     {
@@ -79,7 +79,7 @@ struct switch_on_next
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        using output_type = Subscriber;
+        typedef Subscriber output_type;
 
         struct switch_state_type
             : public std::enable_shared_from_this<switch_state_type>
@@ -151,8 +151,8 @@ struct switch_on_next
                     state->out,
                     state->inner_lifetime,
                 // on_next
-                    [state, st](auto&& ct) {
-                        state->out.on_next(std::forward<decltype(ct)>(ct));
+                    [state, st](collection_value_type ct) {
+                        state->out.on_next(std::move(ct));
                     },
                 // on_error
                     [state](rxu::error_ptr e) {

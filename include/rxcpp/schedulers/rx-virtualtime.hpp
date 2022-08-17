@@ -17,14 +17,14 @@ template<class Absolute, class Relative>
 struct virtual_time_base : std::enable_shared_from_this<virtual_time_base<Absolute, Relative>>
 {
 private:
-    using this_type = virtual_time_base<Absolute, Relative>;
+    typedef virtual_time_base<Absolute, Relative> this_type;
     virtual_time_base(const virtual_time_base&);
 
     mutable bool isenabled;
 
 public:
-    using absolute = Absolute;
-    using relative = Relative;
+    typedef Absolute absolute;
+    typedef Relative relative;
 
     virtual ~virtual_time_base()
     {
@@ -44,7 +44,7 @@ protected:
 
     mutable absolute clock_now;
 
-    using item_type = time_schedulable<long>;
+    typedef time_schedulable<long> item_type;
 
     virtual absolute add(absolute, relative) const =0;
 
@@ -167,11 +167,12 @@ public:
 template<class Absolute, class Relative>
 struct virtual_time : public detail::virtual_time_base<Absolute, Relative>
 {
-    using base = detail::virtual_time_base<Absolute, Relative>;
+    typedef detail::virtual_time_base<Absolute, Relative> base;
 
-    using item_type = typename base::item_type;
+    typedef typename base::item_type item_type;
 
-    using queue_item_time = detail::schedulable_queue<typename item_type::time_point_type>;
+    typedef detail::schedulable_queue<
+        typename item_type::time_point_type> queue_item_time;
 
     mutable queue_item_time q;
 

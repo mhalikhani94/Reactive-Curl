@@ -16,8 +16,8 @@ namespace detail {
 template<class T>
 class multicast_observer
 {
-    using observer_type = subscriber<T>;
-    using list_type = std::vector<observer_type>;
+    typedef subscriber<T> observer_type;
+    typedef std::vector<observer_type> list_type;
 
     struct mode
     {
@@ -100,7 +100,7 @@ class multicast_observer
     std::shared_ptr<binder_type> b;
 
 public:
-    using input_subscriber_type = subscriber <T, observer<T, detail::multicast_observer<T>>>;
+    typedef subscriber<T, observer<T, detail::multicast_observer<T>>> input_subscriber_type;
 
     explicit multicast_observer(composite_subscription cs)
         : b(std::make_shared<binder_type>(cs))
@@ -174,7 +174,8 @@ public:
             std::terminate();
         }
     }
-    void on_next(const T& v) const {
+    template<class V>
+    void on_next(V v) const {
         auto current_completer = b->current_completer.lock();
         if (!current_completer) {
             std::unique_lock<std::mutex> guard(b->state->lock);
@@ -238,8 +239,8 @@ class subject
     detail::multicast_observer<T> s;
 
 public:
-    using subscriber_type = subscriber <T, observer<T, detail::multicast_observer<T>>>;
-    using observable_type = observable<T>;
+    typedef subscriber<T, observer<T, detail::multicast_observer<T>>> subscriber_type;
+    typedef observable<T> observable_type;
     subject()
         : s(composite_subscription())
     {

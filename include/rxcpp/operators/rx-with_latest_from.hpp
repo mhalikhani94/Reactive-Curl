@@ -58,17 +58,17 @@ using with_latest_from_invalid_t = typename with_latest_from_invalid<AN...>::typ
 
 template<class Selector, class... ObservableN>
 struct is_with_latest_from_selector_check {
-    using selector_type = rxu::decay_t<Selector>;
+    typedef rxu::decay_t<Selector> selector_type;
 
     struct tag_not_valid;
     template<class CS, class... CON>
-    static auto check(int) -> decltype(std::declval<CS>()((std::declval<typename CON::value_type>())...));
+    static auto check(int) -> decltype((*(CS*)nullptr)((*(typename CON::value_type*)nullptr)...));
     template<class CS, class... CON>
     static tag_not_valid check(...);
 
     using type = decltype(check<selector_type, rxu::decay_t<ObservableN>...>(0));
 
-    static const bool value = !std::is_same_v<type, tag_not_valid>;
+    static const bool value = !std::is_same<type, tag_not_valid>::value;
 };
 
 template<class Selector, class... ObservableN>
@@ -77,10 +77,10 @@ struct invalid_with_latest_from_selector {
 };
 
 template<class Selector, class... ObservableN>
-struct is_with_latest_from_selector : public std::conditional_t<
+struct is_with_latest_from_selector : public std::conditional<
     is_with_latest_from_selector_check<Selector, ObservableN...>::value, 
     is_with_latest_from_selector_check<Selector, ObservableN...>, 
-    invalid_with_latest_from_selector<Selector, ObservableN...>> {
+    invalid_with_latest_from_selector<Selector, ObservableN...>>::type {
 };
 
 template<class Selector, class... ON>
@@ -89,29 +89,29 @@ using result_with_latest_from_selector_t = typename is_with_latest_from_selector
 template<class Coordination, class Selector, class... ObservableN>
 struct with_latest_from_traits {
 
-    using tuple_source_type = std::tuple<ObservableN...>;
-    using tuple_source_value_type = std::tuple<rxu::detail::maybe < typename ObservableN::value_type>...>;
+    typedef std::tuple<ObservableN...> tuple_source_type;
+    typedef std::tuple<rxu::detail::maybe<typename ObservableN::value_type>...> tuple_source_value_type;
 
-    using selector_type = rxu::decay_t<Selector>;
-    using coordination_type = rxu::decay_t<Coordination>;
+    typedef rxu::decay_t<Selector> selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
-    using value_type = typename is_with_latest_from_selector<selector_type, ObservableN...>::type;
+    typedef typename is_with_latest_from_selector<selector_type, ObservableN...>::type value_type;
 };
 
 template<class Coordination, class Selector, class... ObservableN>
 struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_from_traits<Coordination, Selector, ObservableN...>>>
 {
-    using this_type = with_latest_from<Coordination, Selector, ObservableN...>;
+    typedef with_latest_from<Coordination, Selector, ObservableN...> this_type;
 
-    using traits = with_latest_from_traits<Coordination, Selector, ObservableN...>;
+    typedef with_latest_from_traits<Coordination, Selector, ObservableN...> traits;
 
-    using tuple_source_type = typename traits::tuple_source_type;
-    using tuple_source_value_type = typename traits::tuple_source_value_type;
+    typedef typename traits::tuple_source_type tuple_source_type;
+    typedef typename traits::tuple_source_value_type tuple_source_value_type;
 
-    using selector_type = typename traits::selector_type;
+    typedef typename traits::selector_type selector_type;
 
-    using coordination_type = typename traits::coordination_type;
-    using coordinator_type = typename coordination_type::coordinator_type;
+    typedef typename traits::coordination_type coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct values
     {
@@ -135,7 +135,7 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
     template<int Index, class State>
     void subscribe_one(std::shared_ptr<State> state) const {
 
-        using source_value_type = typename std::tuple_element<Index, tuple_source_type>::type::value_type;
+        typedef typename std::tuple_element<Index, tuple_source_type>::type::value_type source_value_type;
 
         composite_subscription innercs;
 
@@ -157,18 +157,19 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
             state->out,
             innercs,
         // on_next
-            [state](auto&& st) {
+            [state](source_value_type st) {
                 auto& value = std::get<Index>(state->latest);
 
                 if (value.empty()) {
                     ++state->valuesSet;
                 }
 
-                value.reset(std::forward<decltype(st)>(st));
+                value.reset(st);
 
                 if (state->valuesSet == sizeof... (ObservableN) && Index == 0) {
                     auto values = rxu::surely(state->latest);
-                    state->out.on_next(rxu::apply(std::move(values), state->selector));
+                    auto selectedResult = rxu::apply(values, state->selector);
+                    state->out.on_next(selectedResult);
                 }
             },
         // on_error
@@ -200,7 +201,7 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        using output_type = Subscriber;
+        typedef Subscriber output_type;
 
         struct with_latest_from_state_type
             : public std::enable_shared_from_this<with_latest_from_state_type>

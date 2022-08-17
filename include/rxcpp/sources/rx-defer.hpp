@@ -31,19 +31,19 @@ namespace detail {
 template<class ObservableFactory>
 struct defer_traits
 {
-    using observable_factory_type = rxu::decay_t<ObservableFactory>;
-    using collection_type = decltype(std::declval<observable_factory_type>()());
-    using value_type = typename collection_type::value_type;
+    typedef rxu::decay_t<ObservableFactory> observable_factory_type;
+    typedef decltype((*(observable_factory_type*)nullptr)()) collection_type;
+    typedef typename collection_type::value_type value_type;
 };
 
 template<class ObservableFactory>
 struct defer : public source_base<rxu::value_type_t<defer_traits<ObservableFactory>>>
 {
-    using this_type = defer<ObservableFactory>;
-    using traits = defer_traits<ObservableFactory>;
+    typedef defer<ObservableFactory> this_type;
+    typedef defer_traits<ObservableFactory> traits;
 
-    using observable_factory_type = typename traits::observable_factory_type;
-    using collection_type = typename traits::collection_type;
+    typedef typename traits::observable_factory_type observable_factory_type;
+    typedef typename traits::collection_type collection_type;
 
     observable_factory_type observable_factory;
 

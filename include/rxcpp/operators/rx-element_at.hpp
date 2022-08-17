@@ -38,7 +38,7 @@ using element_at_invalid_t = typename element_at_invalid<AN...>::type;
     
 template<class T>
 struct element_at {
-    using source_value_type = rxu::decay_t<T>;
+    typedef rxu::decay_t<T> source_value_type;
 
     struct element_at_values {
         element_at_values(int i)
@@ -58,10 +58,10 @@ struct element_at {
     template<class Subscriber>
     struct element_at_observer : public element_at_values
     {
-        using this_type = element_at_observer<Subscriber>;
-        using value_type = source_value_type;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef element_at_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         mutable int current;
 
@@ -71,10 +71,9 @@ struct element_at {
               current(0)
         {
         }
-        template<typename U>
-        void on_next(U&& v) const {
+        void on_next(source_value_type v) const {
             if (current++ == this->index) {
-                dest.on_next(std::forward<U>(v));
+                dest.on_next(v);
                 dest.on_completed();
             }
         }

@@ -11,28 +11,29 @@ namespace rxcpp {
 
 namespace schedulers {
 
-using thread_factory = std::function<std::thread(std::function<void()>)>;
+typedef std::function<std::thread(std::function<void()>)> thread_factory;
 
 struct new_thread : public scheduler_interface
 {
 private:
-    using this_type = new_thread;
+    typedef new_thread this_type;
     new_thread(const this_type&);
 
     struct new_worker : public worker_interface
     {
     private:
-        using this_type = new_worker;
+        typedef new_worker this_type;
 
-        using queue_type = detail::action_queue;
+        typedef detail::action_queue queue_type;
 
         new_worker(const this_type&);
 
         struct new_worker_state : public std::enable_shared_from_this<new_worker_state>
         {
-            using queue_item_time = detail::schedulable_queue<typename clock_type::time_point>;
+            typedef detail::schedulable_queue<
+                typename clock_type::time_point> queue_item_time;
 
-            using item_type = queue_item_time::item_type;
+            typedef queue_item_time::item_type item_type;
 
             virtual ~new_worker_state()
             {

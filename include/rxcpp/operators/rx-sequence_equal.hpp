@@ -45,13 +45,13 @@ using sequence_equal_invalid_t = typename sequence_equal_invalid<AN...>::type;
 template<class T, class Observable, class OtherObservable, class BinaryPredicate, class Coordination>
 struct sequence_equal : public operator_base<bool>
 {
-    using source_type = rxu::decay_t<Observable>;
-    using source_value_type = rxu::decay_t<T>;
-    using other_source_type = rxu::decay_t<OtherObservable>;
-    using other_source_value_type = typename other_source_type::value_type;
-    using predicate_type = rxu::decay_t<BinaryPredicate>;
-    using coordination_type = rxu::decay_t<Coordination>;
-    using coordinator_type = typename coordination_type::coordinator_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<OtherObservable> other_source_type;
+    typedef typename other_source_type::value_type other_source_value_type;
+    typedef rxu::decay_t<BinaryPredicate> predicate_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct values {
         values(source_type s, other_source_type t, predicate_type pred, coordination_type sf)
@@ -78,7 +78,7 @@ struct sequence_equal : public operator_base<bool>
     template<class Subscriber>
     void on_subscribe(Subscriber s) const {
 
-        using output_type = Subscriber;
+        typedef Subscriber output_type;
 
         struct state_type
             : public std::enable_shared_from_this<state_type>
@@ -125,15 +125,13 @@ struct sequence_equal : public operator_base<bool>
 
         auto check_equal = [state]() {
             if(!state->source_values.empty() && !state->other_values.empty()) {
-                auto& x = state->source_values.front();
-                auto& y = state->other_values.front();
-                
-                auto res = state->pred(x, y);
-
+                auto x = std::move(state->source_values.front());
                 state->source_values.pop_front();
+
+                auto y = std::move(state->other_values.front());
                 state->other_values.pop_front();
 
-                if (!res) {
+                if (!state->pred(x, y)) {
                     state->out.on_next(false);
                     state->out.on_completed();
                 }
@@ -157,9 +155,9 @@ struct sequence_equal : public operator_base<bool>
             state->out,
             state->other_lifetime,
             // on_next
-            [state, check_equal](auto&& t) {
+            [state, check_equal](other_source_value_type t) {
                 auto& values = state->other_values;
-                values.emplace_back(std::forward<decltype(t)>(t));
+                values.push_back(t);
                 check_equal();
             },
             // on_error
@@ -185,9 +183,9 @@ struct sequence_equal : public operator_base<bool>
         source.get().subscribe(
             state->source_lifetime,
             // on_next
-            [state, check_equal](auto&& t) {
+            [state, check_equal](source_value_type t) {
                 auto& values = state->source_values;
-                values.emplace_back(std::forward<decltype(t)>(t));
+                values.push_back(t);
                 check_equal();
             },
             // on_error

@@ -41,9 +41,9 @@ using map_invalid_t = typename map_invalid<AN...>::type;
 template<class T, class Selector>
 struct map
 {
-    using source_value_type = rxu::decay_t<T>;
-    using select_type = rxu::decay_t<Selector>;
-    using value_type = decltype(std::declval<select_type>()(std::declval<source_value_type>()));
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Selector> select_type;
+    typedef decltype((*(select_type*)nullptr)(*(source_value_type*)nullptr)) value_type;
     select_type selector;
 
     map(select_type s)
@@ -54,10 +54,10 @@ struct map
     template<class Subscriber>
     struct map_observer
     {
-        using this_type = map_observer<Subscriber>;
-        using value_type = decltype(std::declval<select_type>()(std::declval<source_value_type>()));
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<source_value_type, this_type>;
+        typedef map_observer<Subscriber> this_type;
+        typedef decltype((*(select_type*)nullptr)(*(source_value_type*)nullptr)) value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<source_value_type, this_type> observer_type;
         dest_type dest;
         mutable select_type selector;
 
@@ -66,15 +66,16 @@ struct map
             , selector(std::move(s))
         {
         }
-
         template<class Value>
-        void on_next(Value&& v) const
-        {
-            on_exception_no_return([&]()
-                                   {
-                                       dest.on_next(this->selector(std::forward<Value>(v)));
-                                   },
-                                   dest);
+        void on_next(Value&& v) const {
+            auto selected = on_exception(
+                [&](){
+                    return this->selector(std::forward<Value>(v));},
+                dest);
+            if (selected.empty()) {
+                return;
+            }
+            dest.on_next(std::move(selected.get()));
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(e);

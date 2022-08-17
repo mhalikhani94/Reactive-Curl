@@ -14,13 +14,13 @@ namespace schedulers {
 struct immediate : public scheduler_interface
 {
 private:
-    using this_type = immediate;
+    typedef immediate this_type;
     immediate(const this_type&);
 
     struct immediate_worker : public worker_interface
     {
     private:
-        using this_type = immediate_worker;
+        typedef immediate_worker this_type;
         immediate_worker(const this_type&);
     public:
         virtual ~immediate_worker()

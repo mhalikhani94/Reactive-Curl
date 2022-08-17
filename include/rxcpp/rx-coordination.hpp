@@ -10,7 +10,7 @@
 namespace rxcpp {
 
 struct tag_coordinator {};
-struct coordinator_base { using coordinator_tag = tag_coordinator; };
+struct coordinator_base {typedef tag_coordinator coordinator_tag;};
 
 template<class T, class C = rxu::types_checked>
 struct is_coordinator : public std::false_type {};
@@ -20,7 +20,7 @@ struct is_coordinator<T, typename rxu::types_checked_from<typename T::coordinato
     : public std::is_convertible<typename T::coordinator_tag*, tag_coordinator*> {};
 
 struct tag_coordination {};
-struct coordination_base { using coordination_tag = tag_coordination; };
+struct coordination_base {typedef tag_coordination coordination_tag;};
 
 namespace detail {
 
@@ -45,27 +45,27 @@ template<class Input>
 class coordinator : public coordinator_base
 {
 public:
-    using input_type = Input;
+    typedef Input input_type;
 
 private:
-    struct not_supported { using type = not_supported; };
+    struct not_supported {typedef not_supported type;};
 
     template<class Observable>
     struct get_observable
     {
-        using type = decltype(std::declval<input_type>().in(std::declval<Observable>()));
+        typedef decltype((*(input_type*)nullptr).in((*(Observable*)nullptr))) type;
     };
 
     template<class Subscriber>
     struct get_subscriber
     {
-        using type = decltype(std::declval<input_type>().out(std::declval<Subscriber>()));
+        typedef decltype((*(input_type*)nullptr).out((*(Subscriber*)nullptr))) type;
     };
 
     template<class F>
     struct get_action_function
     {
-        using type = decltype(std::declval<input_type>().act(std::declval<F>()));
+        typedef decltype((*(input_type*)nullptr).act((*(F*)nullptr))) type;
     };
 
 public:
@@ -74,9 +74,10 @@ public:
     template<class T>
     struct get
     {
-        using type = typename std::conditional_t<rxsc::detail::is_action_function<T>::value, get_action_function<T>,
-                typename std::conditional_t<is_observable<T>::value, get_observable<T>,
-                        typename std::conditional_t<is_subscriber<T>::value, get_subscriber<T>, not_supported>>>::type;
+        typedef typename std::conditional<
+            rxsc::detail::is_action_function<T>::value, get_action_function<T>, typename std::conditional<
+            is_observable<T>::value, get_observable<T>, typename std::conditional<
+            is_subscriber<T>::value, get_subscriber<T>, not_supported>::type>::type>::type::type type;
     };
 
     coordinator(Input i) : input(i) {}
@@ -154,7 +155,7 @@ public:
 
     explicit identity_one_worker(rxsc::scheduler sc) : factory(sc) {}
 
-    using coordinator_type = coordinator<input_type>;
+    typedef coordinator<input_type> coordinator_type;
 
     inline rxsc::scheduler::clock_type::time_point now() const {
         return factory.now();
@@ -207,10 +208,10 @@ class serialize_one_worker : public coordination_base
     template<class Observer>
     struct serialize_observer
     {
-        using this_type = serialize_observer<Observer>;
-        using dest_type = rxu::decay_t<Observer>;
-        using value_type = typename dest_type::value_type;
-        using observer_type = observer<value_type, this_type>;
+        typedef serialize_observer<Observer> this_type;
+        typedef rxu::decay_t<Observer> dest_type;
+        typedef typename dest_type::value_type value_type;
+        typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         std::shared_ptr<std::mutex> lock;
 
@@ -283,7 +284,7 @@ public:
 
     explicit serialize_one_worker(rxsc::scheduler sc) : factory(sc) {}
 
-    using coordinator_type = coordinator<input_type>;
+    typedef coordinator<input_type> coordinator_type;
 
     inline rxsc::scheduler::clock_type::time_point now() const {
         return factory.now();

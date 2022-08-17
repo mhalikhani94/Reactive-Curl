@@ -41,8 +41,8 @@ using switch_if_empty_invalid_t = typename switch_if_empty_invalid<AN...>::type;
 template<class T, class BackupSource>
 struct switch_if_empty
 {
-    using source_value_type = rxu::decay_t<T>;
-    using backup_source_type = rxu::decay_t<BackupSource>;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<BackupSource> backup_source_type;
 
     backup_source_type backup;
 
@@ -54,10 +54,10 @@ struct switch_if_empty
     template<class Subscriber>
     struct switch_if_empty_observer
     {
-        using this_type = switch_if_empty_observer<Subscriber>;
-        using value_type = source_value_type;
-        using dest_type = rxu::decay_t<Subscriber>;
-        using observer_type = observer<value_type, this_type>;
+        typedef switch_if_empty_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
 
         dest_type dest;
         composite_subscription lifetime;
@@ -72,10 +72,9 @@ struct switch_if_empty
         {
             dest.add(lifetime);
         }
-        template<typename U>
-        void on_next(U&& v) const {
+        void on_next(source_value_type v) const {
             is_empty = false;
-            dest.on_next(std::forward<U>(v));
+            dest.on_next(std::move(v));
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(std::move(e));
@@ -161,9 +160,9 @@ struct member_overload<default_if_empty_tag>
         class SourceValue = rxu::value_type_t<Observable>,
         class BackupSource = decltype(rxs::from(std::declval<SourceValue>())),
         class DefaultIfEmpty = rxo::detail::switch_if_empty<SourceValue, BackupSource>>
-    static auto member(Observable&& o, Value&& v)
-        -> decltype(o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::forward<Value>(v))))) {
-        return      o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::forward<Value>(v))));
+    static auto member(Observable&& o, Value v)
+        -> decltype(o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::move(v))))) {
+        return      o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::move(v))));
     }
 
     template<class... AN>

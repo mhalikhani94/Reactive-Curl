@@ -84,8 +84,8 @@ template<class T,
          class Observable = void> // note: type order flipped versus the operator.
 struct ref_count : public operator_base<T>
 {
-    using observable_type = rxu::decay_t<Observable>;
-    using connectable_type = rxu::decay_t<ConnectableObservable>;
+    typedef rxu::decay_t<Observable> observable_type;
+    typedef rxu::decay_t<ConnectableObservable> connectable_type;
 
     // ref_count() == false
     // ref_count(other) == true

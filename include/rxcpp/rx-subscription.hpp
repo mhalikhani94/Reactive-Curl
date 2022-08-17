@@ -16,17 +16,17 @@ struct is_unsubscribe_function
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype(std::declval<CF>()());
+    static auto check(int) -> decltype((*(CF*)nullptr)());
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
+    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
 };
 
 }
 
 struct tag_subscription {};
-struct subscription_base { using subscription_tag = tag_subscription; };
+struct subscription_base {typedef tag_subscription subscription_tag;};
 template<class T>
 class is_subscription
 {
@@ -41,7 +41,7 @@ public:
 template<class Unsubscribe>
 class static_subscription
 {
-    using unsubscribe_call_type = rxu::decay_t<Unsubscribe>;
+    typedef rxu::decay_t<Unsubscribe> unsubscribe_call_type;
     unsubscribe_call_type unsubscribe_call;
     static_subscription()
     {
@@ -81,13 +81,13 @@ class subscription : public subscription_base
         std::atomic<bool> issubscribed;
     };
 public:
-    using weak_state_type = std::weak_ptr<base_subscription_state>;
+    typedef std::weak_ptr<base_subscription_state> weak_state_type;
 
 private:
     template<class I>
     struct subscription_state : public base_subscription_state
     {
-        using inner_t = rxu::decay_t<I>;
+        typedef rxu::decay_t<I> inner_t;
         subscription_state(inner_t i)
             : base_subscription_state(true)
             , inner(std::move(i))
@@ -143,7 +143,7 @@ public:
         }
     }
     template<class U>
-    explicit subscription(U u, typename std::enable_if<!std::is_same_v<subscription, U> && is_subscription<U>::value, void**>::type = nullptr)
+    explicit subscription(U u, typename std::enable_if<!std::is_same<subscription, U>::value && is_subscription<U>::value, void**>::type = nullptr)
         // intentionally slice
         : state(std::move((*static_cast<subscription*>(&u)).state))
     {
@@ -242,7 +242,7 @@ struct tag_composite_subscription_empty {};
 class composite_subscription_inner
 {
 private:
-    using weak_subscription = subscription::weak_state_type;
+    typedef subscription::weak_state_type weak_subscription;
     struct composite_subscription_state : public std::enable_shared_from_this<composite_subscription_state>
     {
         // invariant: cannot access this data without the lock held.
@@ -381,7 +381,7 @@ private:
     };
 
 public:
-    using shared_state_type = std::shared_ptr<composite_subscription_state>;
+    typedef std::shared_ptr<composite_subscription_state> shared_state_type;
 
 protected:
     mutable shared_state_type state;
@@ -460,9 +460,9 @@ class composite_subscription
     : protected detail::composite_subscription_inner
     , public subscription
 {
-    using inner_type = detail::composite_subscription_inner;
+    typedef detail::composite_subscription_inner inner_type;
 public:
-    using weak_subscription = subscription::weak_state_type;
+    typedef subscription::weak_state_type weak_subscription;
 
     composite_subscription(detail::tag_composite_subscription_empty et)
         : inner_type(et)
@@ -555,7 +555,7 @@ template<class T>
 class resource : public subscription_base
 {
 public:
-    using weak_subscription = typename composite_subscription::weak_subscription;
+    typedef typename composite_subscription::weak_subscription weak_subscription;
 
     resource()
         : lifetime(composite_subscription())
