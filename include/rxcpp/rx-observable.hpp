@@ -196,8 +196,8 @@ class blocking_observable
         cs.add(
             [&](){
                 std::unique_lock<std::mutex> guard(lock);
-                disposed = true;
                 wake.notify_one();
+                disposed = true;
             });
 
         source.subscribe(std::move(scbr));
