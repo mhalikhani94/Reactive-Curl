@@ -1,5 +1,6 @@
 #include "rx-request-manager.hpp"
 
+#include <iostream>
 #include "rx-curl.hpp"
 
 RxRequestManager& RxRequestManager::instance()

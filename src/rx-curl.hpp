@@ -1,12 +1,8 @@
-// ReSharper disable All
 #ifndef RX_CURL_HPP_
 #define RX_CURL_HPP_
 
-#define CURL_STATICLIB
-
 #include <memory>
 #include <rxcpp/rx.hpp>
-#include <rxcpp/rx-includes.hpp>
 #include <curl/curl.h>
 
 #include <thread>
@@ -182,7 +178,7 @@ struct HttpResponse
 	std::shared_ptr<HttpState> state;
 };
 
-size_t rx_curl_http_callback(char* ptr, size_t size, size_t nmemb, subscriber<std::string>* out)
+static size_t rx_curl_http_callback(char* ptr, size_t size, size_t nmemb, subscriber<std::string>* out)
 {
 	int iRealSize = size * nmemb;
 

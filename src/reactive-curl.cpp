@@ -1,10 +1,12 @@
-#define CURL_STATICLIB
-
 #include "rx-request-manager.hpp"
 
 #include <yaml-cpp/yaml.h>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
+
+#include <iostream>
+#include <chrono>
+#include <thread>
 
 int main()
 {
@@ -15,7 +17,6 @@ int main()
         "happy": true
     }
     )");
-
     const auto get_url = "www.google.com";
     const auto post_url = "https://httpbin.org/post";
 

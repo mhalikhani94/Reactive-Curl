@@ -1,12 +1,13 @@
-#pragma once
+#ifndef RX_REQUEST_MANAGER_HPP
+#define RX_REQUEST_MANAGER_HPP
+
 #include <map>
 #include <string>
 #include <vector>
-#include <rxcpp/rx-observable.hpp>
+#include <rxcpp/rx.hpp>
 #include "types.hpp"
 
 struct RxCurl;
-struct HttpResponse;
 
 class RxRequestManager
 {
@@ -28,10 +29,8 @@ public:
 
 private:
 	RxRequestManager();
-	std::vector<rxcpp::observable<HttpResponse>> m_requests;
-	RxCurl* m_rx_curl;
 
-	rxcpp::observable<std::string> response_message;
-	rxcpp::observable<int> status_codes;
+	RxCurl* m_rx_curl;
 	std::string html;
 };
+#endif //RX_REQUEST_MANAGER_HPP
