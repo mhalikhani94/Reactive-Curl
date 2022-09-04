@@ -2,12 +2,14 @@
 #define REACTIVE_CURL_HPP
 #include <string>
 
-enum class HttpRequestType
+enum class HttpRequestMethod
 {
 	kGet,
 	kPost,
+	kPatch,
+	kPut,
+	kDelete,
 };
-
 
 struct Response
 {

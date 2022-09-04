@@ -19,9 +19,10 @@ MESSAGE( STATUS "OPENSSL_CRYPTO_LIBRARIES: " ${OPENSSL_CRYPTO_LIBRARIES})
 MESSAGE( STATUS "YAMLCPP_LIBRARIES: " ${YAMLCPP_LIBRARIES})
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "-O1")
+set(CMAKE_CXX_FLAGS "-O1 -Wnonnull")
 
 add_executable(ReactiveCurl src/reactive-curl.cpp src/rx-request-manager.cpp src/rx-request-manager.hpp src/rx-curl.hpp src/types.hpp)
+#src/request-builders/request-builder-base.hpp src/request-builders/get-request-builder.hpp src/request-builders/get-request-builder.cpp
 include_directories("include")
 target_include_directories(ReactiveCurl PUBLIC
 ${CURL_INCLUDE_DIRS}
