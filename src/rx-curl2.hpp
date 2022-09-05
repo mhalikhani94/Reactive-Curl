@@ -29,6 +29,7 @@ struct HttpResponse
 
 size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp)
 {
+	std::cout << "received 1 chunck" << std::endl;
 	((std::string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
@@ -44,10 +45,9 @@ struct RxCurl2
 {
     rxcpp::observable<HttpResponse> create(HttpRequest request)
     {
-		
-		
 		return rxcpp::observable<>::create<HttpResponse>([&](rxcpp::subscriber<HttpResponse> &out)
 		{
+			//Add Try Catch Here!
 			std::future<HttpResponse> result
 			{
 				std::async(std::launch::async,
@@ -128,7 +128,7 @@ struct RxCurl2
 			auto res = result.get();
 			out.on_next(res);
 			out.on_completed();
-		});
+		}); // add subscribe_on sceduler on observe on
     }
 };
 

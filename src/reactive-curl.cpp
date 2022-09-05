@@ -25,8 +25,23 @@ int main()
         }
     );
 
+    rx_curl2_instance->create(HttpRequest{get_url, HttpRequestMethod::kGet, {}, {}}).subscribe(
+        [=](const HttpResponse& r)
+        {
+            std::cout << r.response_body << std::endl;
+            exit(0);
+        }, [] ()
+        {
+        }
+    );
+
     while (true)
     {
         std::this_thread::sleep_for(std::chrono::hours(1));
     }
 }
+
+//subscibe_on(sceduler)
+//observe_on(computation)
+////mapping//observe_on(main)
+//subscribe on main
