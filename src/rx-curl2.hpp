@@ -56,7 +56,6 @@ struct RxCurl2
 					CURL *curl;
 					CURLcode res;
 					HttpResponse response{};
-
 					curl = curl_easy_init();
 					if(curl)
 					{
