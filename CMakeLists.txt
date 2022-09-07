@@ -21,7 +21,19 @@ MESSAGE( STATUS "YAMLCPP_LIBRARIES: " ${YAMLCPP_LIBRARIES})
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-O1 -Wnonnull")
 
-add_executable(ReactiveCurl src/reactive-curl.cpp src/rx-request-manager.cpp src/rx-request-manager.hpp src/rx-curl.hpp src/rx-curl2.hpp src/mh-http-client.hpp src/types.hpp)
+set(HTTP_CLIENT_FILES
+        src/http-client/curl-handler.hpp
+        src/http-client/exceptions.hpp
+        src/http-client/http-client.hpp
+        src/http-client/http-request.hpp
+        src/http-client/http-request.cpp
+        src/http-client/http-response.hpp
+        src/http-client/options.hpp
+        src/http-client/request-builder.hpp
+        src/http-client/request-builder.cpp
+)
+
+add_executable(ReactiveCurl src/reactive-curl.cpp src/types.hpp ${HTTP_CLIENT_FILES})
 
 include_directories("include")
 target_include_directories(ReactiveCurl PUBLIC
