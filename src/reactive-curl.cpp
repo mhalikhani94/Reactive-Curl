@@ -15,35 +15,6 @@ using json = nlohmann::json;
 int main()
 {
     auto threads = rxcpp::observe_on_event_loop();
-    // auto values = rxcpp::observable<>::range(1);
-
-    // auto s1 = values.subscribe_on(threads).map([](int prime)
-    //     {
-    //         CTDetatils();
-    //         Yield(true);
-    //         return std::make_tuple("1:",prime);
-    //     }
-    // );
-
-    // auto s2 = values.subscribe_on(threads).map([](int prime)
-    //     {
-    //         CTDetatils();
-    //         Yield(true);
-    //         return std::make_tuple("2:",prime);
-    //     }
-    // );
-
-    // s1.merge(s2).take(100).as_blocking().subscribe(rxcpp::util::apply_to(
-    //     [](const char* s, int p) {
-    //         CTDetatils();
-    //         console_mutex.lock();
-    //         printf("%s %d\n",s,p);
-    //         console_mutex.unlock();
-    //     }
-    // ));
-
-
-
 
     const auto get_url = "https://httpbin.org/get";
     const auto post_url = "https://httpbin.org/post";
@@ -214,3 +185,31 @@ int main()
     //         }
     //     })
     //     .send_request();
+
+        // auto values = rxcpp::observable<>::range(1);
+
+    // auto s1 = values.subscribe_on(threads).map([](int prime)
+    //     {
+    //         CTDetatils();
+    //         Yield(true);
+    //         return std::make_tuple("1:",prime);
+    //     }
+    // );
+
+    // auto s2 = values.subscribe_on(threads).map([](int prime)
+    //     {
+    //         CTDetatils();
+    //         Yield(true);
+    //         return std::make_tuple("2:",prime);
+    //     }
+    // );
+
+    // s1.merge(s2).take(100).as_blocking().subscribe(rxcpp::util::apply_to(
+    //     [](const char* s, int p) {
+    //         CTDetatils();
+    //         console_mutex.lock();
+    //         printf("%s %d\n",s,p);
+    //         console_mutex.unlock();
+    //     }
+    // ));
+
