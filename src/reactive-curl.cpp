@@ -18,6 +18,7 @@ int main()
     auto main_thread = rxcpp::observe_on_run_loop(run_loop);
     auto worker_thread = rxcpp::observe_on_event_loop();
     rxcpp::composite_subscription lifetime;
+    rxcpp::composite_subscription lifetime2;
 
 
     const auto get_url = "https://httpbin.org/get";
@@ -53,7 +54,7 @@ int main()
         }
     }).subscribe_on(worker_thread)
     .observe_on(main_thread)
-    .as_blocking().subscribe
+    .subscribe
     (lifetime,
         [&](const HttpResponse& r)
         {
@@ -101,8 +102,8 @@ int main()
         }
     }).subscribe_on(worker_thread)
     .observe_on(main_thread)
-    .as_blocking().subscribe
-    (lifetime,
+    .subscribe
+    (lifetime2,
         [&](const HttpResponse& r)
         {
             std::cout << r.body << std::endl;
@@ -116,7 +117,7 @@ int main()
         }
     );
 
-    while (lifetime.is_subscribed() || !run_loop.empty())
+    while (lifetime.is_subscribed() || lifetime2.is_subscribed() || !run_loop.empty())
     {
         while (!run_loop.empty() && run_loop.peek().when < run_loop.now())
         {
