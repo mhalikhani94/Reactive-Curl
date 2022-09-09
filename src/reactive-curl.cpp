@@ -14,15 +14,19 @@ using json = nlohmann::json;
 
 int main()
 {
-    auto threads = rxcpp::observe_on_event_loop();
+    rxcpp::schedulers::run_loop run_loop;
+    auto main_thread = rxcpp::observe_on_run_loop(run_loop);
+    auto worker_thread = rxcpp::observe_on_event_loop();
+    rxcpp::composite_subscription lifetime;
+
 
     const auto get_url = "https://httpbin.org/get";
     const auto post_url = "https://httpbin.org/post";
 
     HttpClient client;
-
+    
     rxcpp::observable<>::create<HttpResponse>([&](rxcpp::subscriber<HttpResponse> out)
-    {
+   {
         try
         {
             client.build()->Get(get_url)
@@ -35,71 +39,91 @@ int main()
                     {
                         out.on_next(result);
                         out.on_completed();
-                    } catch (const std::exception& ex) {
-                        std::cout << ex.what() << std::endl;
-                        return;
+                    } catch ( ... ) {
+                        out.on_error(std::current_exception());
                     }
                 } else {
-                    std::cout << "Request failed: " << result.error_msg << std::endl
-                        << "HTTP code: " << result.http_response_code << std::endl;
+                    out.on_next(result);
+                    out.on_completed();
                 }
             })
             .send_request();
-        } catch (...) {
-
+        } catch ( ... ) {
+            out.on_error(std::current_exception());
         }
-    }).subscribe_on(threads).subscribe
-    (
+    }).subscribe_on(worker_thread)
+    .observe_on(main_thread)
+    .as_blocking().subscribe
+    (lifetime,
         [&](const HttpResponse& r)
         {
             std::cout << r.body << std::endl;
+        },
+        [](std::exception_ptr ep)
+        {
+            std::cout << "on error" << std::endl;
         }, [] ()
         {
+            std::cout << "on completed!" << std::endl;
         }
     );
 
     rxcpp::observable<>::create<HttpResponse>([&](rxcpp::subscriber<HttpResponse> out)
     {
-        client.build()->Post(post_url)
-        .accept_json()
-        .add_json_body("")
-        .add_header("Cache-Control: no-cache, no-store, must-revalidate")
-        .add_header("Pragma: no-cache")
-        .add_header("Expires: 0")
-        .process_response([&](const HttpResponse& result)
+        try
         {
-            if (result.is_ok())
+            client.build()->Post(post_url)
+            .accept_json()
+            .add_json_body("")
+            .add_header("Cache-Control: no-cache, no-store, must-revalidate")
+            .add_header("Pragma: no-cache")
+            .add_header("Expires: 0")
+            .process_response([&](const HttpResponse& result)
             {
-                try
+                if (result.is_ok())
                 {
+                    try
+                    {
+                        out.on_next(result);
+                        out.on_completed();
+                    } catch ( ... ) {
+                        out.on_error(std::current_exception());
+                    }
+                    
+                } else {
                     out.on_next(result);
                     out.on_completed();
-                } catch (const std::exception& ex) {
-                    std::cout << ex.what() << std::endl;
-                    return;
                 }
-                
-            } else {
-                std::cout << "Request failed: " << result.error_msg << std::endl
-                    << "HTTP code: " << result.http_response_code << std::endl;
-            }
-        })
-        .send_request();
-    }).subscribe_on(threads).subscribe
-    (
+            })
+            .send_request();
+        } catch ( ... ) {
+            out.on_error(std::current_exception());
+        }
+    }).subscribe_on(worker_thread)
+    .observe_on(main_thread)
+    .as_blocking().subscribe
+    (lifetime,
         [&](const HttpResponse& r)
         {
             std::cout << r.body << std::endl;
-            exit(0);
+        },
+        [](std::exception_ptr ep)
+        {
+            std::cout << "on error" << std::endl;
         }, [] ()
         {
+            std::cout << "on completed!" << std::endl;
         }
     );
-    
-    while (true)
+
+    while (lifetime.is_subscribed() || !run_loop.empty())
     {
-        std::this_thread::sleep_for(std::chrono::hours(1));
+        while (!run_loop.empty() && run_loop.peek().when < run_loop.now())
+        {
+            run_loop.dispatch();
+        }
     }
+    return 0;
 }
 
 
